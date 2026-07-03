@@ -1,0 +1,527 @@
+
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NEXUS - AI Hub Engine</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .neon-border { box-shadow: 0 0 10px rgba(6, 182, 212, 0.5); }
+        .locked-item { filter: blur(4px) grayscale(90%); pointer-events: none; opacity: 0.5; position: relative; }
+        .locked-item::after { content: "🔒 LOCKED"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #ef4444; font-weight: bold; font-size: 14px; text-shadow: 0 0 5px black; }
+        .tab-content { display: none; }
+        .active-tab { display: block; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .glow-pro { box-shadow: inset 0 0 20px rgba(236, 72, 153, 0.2), 0 0 20px rgba(236, 72, 153, 0.2) !important; border: 1px solid rgba(236, 72, 153, 0.5) !important; }
+        .glow-standard { box-shadow: inset 0 0 20px rgba(6, 182, 212, 0.2), 0 0 20px rgba(6, 182, 212, 0.2) !important; border: 1px solid rgba(6, 182, 212, 0.5) !important; }
+        .text-animate-pro { background: linear-gradient(to right, #ec4899, #8b5cf6, #ec4899); -webkit-background-clip: text; color: transparent; animation: gradientMove 3s ease infinite; background-size: 200% 200%; }
+        @keyframes gradientMove { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        
+        /* Voice Wave CSS */
+        .voice-wave { display: inline-flex; gap: 3px; align-items: flex-end; height: 12px; margin-left: 8px; overflow: hidden; width: 15px;}
+        .voice-wave span { width: 3px; background: #ec4899; border-radius: 2px; animation: wave 1s infinite ease-in-out; }
+        .voice-wave span:nth-child(2) { animation-delay: 0.2s; }
+        .voice-wave span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes wave { 0%, 100% { height: 4px; } 50% { height: 12px; } }
+        
+        .study-section { display: none; }
+        .active-study { display: flex; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col">
+
+    <div id="login-gateway" class="fixed inset-0 z-50 bg-slate-950 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-cyan-500/30 p-6 md:p-8 rounded-2xl w-full max-w-md neon-border shadow-lg">
+            <div class="text-center mb-6">
+                <i class="fa-solid fa-microchip text-5xl text-cyan-400 mb-2"></i>
+                <h1 class="text-3xl font-bold tracking-wider text-cyan-400">NEXUS</h1>
+            </div>
+            <div class="space-y-4">
+                <input type="text" id="login-name" placeholder="Name..." class="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-3 text-sm focus:border-cyan-400 outline-none">
+                <input type="tel" id="login-phone" placeholder="Phone Number..." class="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-3 text-sm focus:border-cyan-400 outline-none">
+                <input type="text" id="login-promo" placeholder="Promo Code (Optional)" class="w-full bg-slate-950 border border-pink-500/50 rounded-lg px-4 py-3 text-sm focus:border-pink-500 outline-none">
+                <button onclick="verifyIdentity(false)" class="w-full bg-cyan-500 text-slate-950 font-bold py-3 rounded-lg">Access Core</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="main-dashboard" class="hidden flex-1 flex-col md:flex-row min-h-screen transition-all duration-500">
+        
+        <div class="w-full md:w-64 bg-slate-900 border-b md:border-r border-slate-800 flex flex-col shrink-0">
+            <div class="p-4 border-b border-slate-800 bg-slate-950 text-center" id="user-profile-box">
+                <h2 id="greeting-text" class="text-lg font-bold text-cyan-400">Hii User</h2>
+                <p id="role-text" class="text-[11px] text-slate-400 mt-1">Guest Access</p>
+            </div>
+            <nav class="flex md:flex-col gap-2 p-3 overflow-x-auto hide-scrollbar">
+                <button onclick="switchTab('chat')" id="tab-btn-chat" class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 shrink-0"><i class="fa-solid fa-comments"></i> 3. Chat Room</button>
+                <button onclick="switchTab('study')" id="tab-btn-study" class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-400 bg-slate-800 shrink-0"><i class="fa-solid fa-book-open"></i> 4. Study Lab</button>
+                <button onclick="switchTab('info')" id="tab-btn-info" class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-400 bg-slate-800 shrink-0"><i class="fa-solid fa-magnifying-glass"></i> 5. Info Analyzer</button>
+                <button onclick="switchTab('coding')" id="tab-btn-coding" class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-400 bg-slate-800 shrink-0"><i class="fa-solid fa-code"></i> 6. Coding</button>
+                <button onclick="switchTab('imagegen')" id="tab-btn-imagegen" class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-400 bg-slate-800 shrink-0"><i class="fa-solid fa-image"></i> 7. Image Gen</button>
+                <button onclick="switchTab('promo')" id="tab-btn-promo" class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-pink-400 bg-pink-500/10 border border-pink-500/30 shrink-0 mt-auto"><i class="fa-solid fa-key"></i> 8. Promo Code</button>
+            </nav>
+        </div>
+
+        <main class="flex-1 overflow-y-auto p-4 md:p-6 pb-20">
+            
+            <div id="tab-chat" class="tab-content active-tab flex flex-col h-[75vh] md:h-full">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold">NEXUS Chat</h2>
+                    <div class="flex bg-slate-900 border border-slate-800 rounded-lg p-1 text-xs">
+                        <button onclick="setMode('text')" id="mode-text" class="px-3 py-1.5 rounded bg-cyan-500 text-slate-950 font-bold">Text Mode</button>
+                        <button onclick="setMode('voice')" id="mode-voice" class="px-3 py-1.5 rounded text-slate-400">Voice Mode</button>
+                    </div>
+                </div>
+                <div id="chat-messages" class="flex-1 overflow-y-auto p-4 bg-slate-900 border border-slate-800 rounded-2xl mb-3 space-y-4">
+                    <div class="flex items-start gap-3">
+                        <div class="bg-cyan-500/10 text-cyan-400 w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs shrink-0">NX</div>
+                        <div class="bg-slate-800 px-4 py-2 rounded-2xl rounded-tl-none text-sm w-full">Hii bos! Tui kemon achis?</div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 bg-slate-900 p-2 rounded-xl border border-slate-800">
+                    <input type="text" id="chat-input" placeholder="Type message..." class="flex-1 bg-transparent px-3 py-2 text-sm outline-none" onkeypress="if(event.key === 'Enter') sendChatMessage()">
+                    <button id="send-btn" onclick="sendChatMessage()" class="bg-cyan-500 text-slate-950 w-10 h-10 rounded-lg font-bold flex items-center justify-center shrink-0">
+                        <i id="send-icon" class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="tab-study" class="tab-content">
+                <h2 class="text-xl font-bold mb-4 text-cyan-400"><i class="fa-solid fa-book-open"></i> Study Lab</h2>
+                <div class="flex gap-2 mb-4 bg-slate-900 p-1 rounded-xl">
+                    <button onclick="switchStudy('doubts')" id="s-btn-doubts" class="flex-1 py-2 text-sm font-bold bg-cyan-500 text-slate-900 rounded-lg">Doubts</button>
+                    <button onclick="switchStudy('practice')" id="s-btn-practice" class="flex-1 py-2 text-sm font-bold text-slate-400">Practice</button>
+                    <button onclick="switchStudy('pyq')" id="s-btn-pyq" class="flex-1 py-2 text-sm font-bold text-slate-400">PYQ</button>
+                </div>
+
+                <div id="study-doubts" class="study-section active-study flex-col gap-4">
+                    <textarea id="doubt-text" placeholder="Proshno ba math likh... (Limit par hole likhbi 'baki ta bolo')" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-4 text-sm h-24 outline-none"></textarea>
+                    <div class="bg-slate-900 border-2 border-dashed border-slate-700 rounded-xl p-4 text-center relative">
+                        <input type="file" id="doubt-img" class="absolute inset-0 opacity-0 cursor-pointer">
+                        <p class="text-xs text-slate-400"><i class="fa-solid fa-camera"></i> Chobi upload kor</p>
+                    </div>
+                    <button onclick="askStudy('doubts')" class="w-full bg-cyan-500 text-slate-950 py-3 rounded-xl font-bold">Solve (Step-by-Step)</button>
+                </div>
+
+                <div id="study-practice" class="study-section flex-col gap-4">
+                    <input type="text" id="practice-topic" placeholder="Kibishoye practice korbi? (eg. Physics, Math)" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-4 text-sm outline-none">
+                    <select id="practice-diff" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-4 text-sm outline-none text-slate-300">
+                        <option value="Easy">Easy</option>
+                        <option value="Medium" selected>Medium</option>
+                        <option value="Hard">Hard</option>
+                    </select>
+                    <button onclick="askStudy('practice')" class="w-full bg-cyan-500 text-slate-950 py-3 rounded-xl font-bold">Get Questions</button>
+                </div>
+
+                <div id="study-pyq" class="study-section flex-col gap-4">
+                    <input type="text" id="pyq-exam" placeholder="Exam er naam likh (eg. Madhyamik, HS, JEE)" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-4 text-sm outline-none">
+                    <button onclick="askStudy('pyq')" class="w-full bg-cyan-500 text-slate-950 py-3 rounded-xl font-bold">Get PYQ</button>
+                </div>
+
+                <div class="w-full bg-slate-900 border border-slate-800 rounded-xl p-4 mt-4 min-h-[100px]">
+                    <p id="study-output" class="text-sm text-slate-300 leading-relaxed"></p>
+                </div>
+            </div>
+
+            <div id="tab-info" class="tab-content">
+                <h2 class="text-xl font-bold mb-4 text-cyan-400"><i class="fa-solid fa-magnifying-glass"></i> Info Analyzer</h2>
+                <div class="flex flex-col gap-4">
+                    <div class="bg-slate-900 border-2 border-dashed border-slate-700 rounded-xl p-10 text-center relative w-full">
+                        <input type="file" id="info-file" class="absolute inset-0 opacity-0 cursor-pointer">
+                        <i class="fa-solid fa-eye text-4xl text-slate-500 mb-3"></i>
+                        <p class="text-sm text-slate-300">Jekono chobi upload kor</p>
+                    </div>
+                    <button onclick="analyzeInfo()" class="w-full bg-emerald-500 text-slate-950 py-3 rounded-xl font-bold text-sm">Analyze Image</button>
+                    <p id="info-output" class="text-sm text-slate-300 leading-relaxed bg-slate-900 p-4 rounded-xl min-h-[100px]"></p>
+                </div>
+            </div>
+
+            <div id="tab-coding" class="tab-content">
+                <h2 class="text-xl font-bold mb-4 text-cyan-400"><i class="fa-solid fa-code"></i> AI Coding Teacher</h2>
+                
+                <div class="flex gap-2 overflow-x-auto hide-scrollbar mb-4 pb-2">
+                    <button class="coding-lang-btn border border-cyan-500 bg-slate-800 px-4 py-2 rounded-lg text-xs font-bold text-blue-400">Python</button>
+                    <button class="coding-lang-btn bg-slate-800 px-4 py-2 rounded-lg text-xs font-bold text-red-400">Java</button>
+                    <button class="coding-lang-btn bg-slate-800 px-4 py-2 rounded-lg text-xs font-bold text-yellow-400">JS</button>
+                    <button id="mod-c" class="coding-lang-btn bg-slate-800 px-4 py-2 rounded-lg text-xs font-bold text-blue-300">C++</button>
+                    <button id="mod-linux" class="coding-lang-btn bg-slate-800 px-4 py-2 rounded-lg text-xs font-bold text-orange-400"><i class="fa-brands fa-linux"></i> Linux</button>
+                    <button id="mod-cyber" class="coding-lang-btn bg-slate-800 px-4 py-2 rounded-lg text-xs font-bold text-rose-500"><i class="fa-solid fa-shield"></i> Cyber</button>
+                </div>
+
+                <div class="flex flex-col gap-4">
+                    <div class="bg-slate-900 border-2 border-dashed border-slate-700 rounded-xl p-4 text-center relative">
+                        <input type="file" id="coding-file" class="absolute inset-0 opacity-0 cursor-pointer">
+                        <p class="text-xs text-slate-400"><i class="fa-solid fa-image"></i> Error ashle Screenshot de</p>
+                    </div>
+                    <textarea id="code-error-input" placeholder="Error code ba 'baki ta bolo' ekhane paste kor..." class="w-full bg-slate-900 border border-slate-800 rounded-xl p-4 text-sm font-mono h-24 outline-none"></textarea>
+                    <button onclick="askCodingTeacher()" class="w-full bg-cyan-500 text-slate-950 py-3 rounded-xl font-bold">Bujhiye Dao NEXUS</button>
+                    <p id="coding-teacher-output" class="text-sm text-slate-300 font-mono leading-relaxed bg-slate-900 p-4 rounded-xl min-h-[100px]"></p>
+                </div>
+            </div>
+
+            <div id="tab-imagegen" class="tab-content">
+                <h2 class="text-xl font-bold mb-4 text-cyan-400"><i class="fa-solid fa-image"></i> Image Generation</h2>
+                
+                <h3 class="text-xs font-bold text-slate-400 mb-2 uppercase">Presets (Click to select)</h3>
+                <div class="grid grid-cols-3 gap-3 mb-6">
+                    <div onclick="setPreset('attitude')" class="bg-slate-900 border border-slate-800 p-3 rounded-xl text-center cursor-pointer hover:border-cyan-500">
+                        <i class="fa-solid fa-fire text-red-500 mb-1 text-xl"></i><p class="text-[10px] font-bold text-white">ATTITUDE</p>
+                    </div>
+                    <div onclick="setPreset('broken')" class="bg-slate-900 border border-slate-800 p-3 rounded-xl text-center cursor-pointer hover:border-cyan-500">
+                        <i class="fa-solid fa-heart-crack text-blue-500 mb-1 text-xl"></i><p class="text-[10px] font-bold text-white">BROKEN</p>
+                    </div>
+                    <div onclick="setPreset('aesthetic')" class="bg-slate-900 border border-slate-800 p-3 rounded-xl text-center cursor-pointer hover:border-cyan-500">
+                        <i class="fa-solid fa-cloud text-pink-500 mb-1 text-xl"></i><p class="text-[10px] font-bold text-white">AESTHETIC</p>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-4">
+                    <textarea id="img-prompt" placeholder="Nije prompt likhe edit kora..." class="w-full bg-slate-900 border border-slate-800 rounded-xl p-4 text-sm outline-none h-24"></textarea>
+                    
+                    <div class="bg-slate-900 border-2 border-dashed border-slate-700 rounded-xl p-4 text-center relative">
+                        <input type="file" id="img-upload-input" class="absolute inset-0 opacity-0 cursor-pointer">
+                        <p class="text-xs text-slate-400"><i class="fa-solid fa-upload"></i> Nijer chobi de (Face Edit)</p>
+                    </div>
+                    
+                    <button onclick="generateImage()" class="w-full bg-cyan-500 text-slate-950 py-3 rounded-xl font-bold">Generate AI Image</button>
+                    
+                    <div id="img-output-container" class="mt-4 flex flex-col items-center w-full bg-slate-900 p-4 rounded-xl border border-slate-800 min-h-[100px]">
+                        <div id="img-output" class="text-sm text-slate-400 text-center w-full">Generated image will appear here...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-promo" class="tab-content">
+                <h2 class="text-xl font-bold mb-4 text-pink-400"><i class="fa-solid fa-key"></i> Upgrade Feature</h2>
+                <div class="bg-slate-900 border border-slate-800 p-6 rounded-xl text-center">
+                    <p class="text-sm text-slate-300 mb-4">Pore jodi tui promo code pas, ekhane diye unlock korte parbi.</p>
+                    <input type="text" id="late-promo-input" placeholder="Enter Promo Code..." class="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-3 text-sm focus:border-pink-500 outline-none mb-4">
+                    <button onclick="verifyIdentity(true)" class="w-full bg-pink-600 text-white font-bold py-3 rounded-lg">Upgrade Now</button>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        let currentMode = 'text';
+        let selectedLanguage = 'Python';
+        let userPhone = 'guest';
+        let globalPromo = 'normal';
+
+        // 1. Login Logic
+        function verifyIdentity(isLateUpgrade = false) {
+            let name, phone, promo;
+            
+            if(window.speechSynthesis) {
+                let unlockAudio = new SpeechSynthesisUtterance('');
+                window.speechSynthesis.speak(unlockAudio);
+            }
+
+            if(!isLateUpgrade) {
+                name = document.getElementById('login-name').value.trim();
+                phone = document.getElementById('login-phone').value.trim();
+                promo = document.getElementById('login-promo').value.trim();
+                if (!name || !phone) { alert("Name ar Phone de!"); return; }
+                userPhone = phone;
+                document.getElementById('login-gateway').classList.add('hidden');
+                document.getElementById('main-dashboard').classList.remove('hidden');
+                document.getElementById('main-dashboard').classList.add('flex');
+                document.getElementById('greeting-text').innerText = "Hii " + name;
+            } else {
+                promo = document.getElementById('late-promo-input').value.trim();
+                if(!promo) { alert("Code to de!"); return; }
+            }
+            
+            const dash = document.getElementById('main-dashboard');
+            const roleText = document.getElementById('role-text');
+            const greetingText = document.getElementById('greeting-text');
+
+            document.querySelectorAll('.locked-item').forEach(el => el.classList.remove('locked-item'));
+            dash.classList.remove('glow-pro', 'glow-standard');
+
+            if (promo === 'Pro_NEXUS_1.0') { 
+                globalPromo = 'pro';
+                greetingText.innerHTML = `Hii ${name} <span class="text-[10px] text-pink-400">(Special User)</span>`;
+                greetingText.className = "text-lg font-bold text-animate-pro flex items-center gap-2 justify-center"; 
+                roleText.innerText = "All Features Unlocked";
+                dash.classList.add('glow-pro');
+                if(!isLateUpgrade) fireHeartsConfetti();
+                else alert("Upgraded to PRO!");
+            } 
+            else if (promo === 'NEXUS_2.0') {
+                globalPromo = 'standard';
+                roleText.innerText = "Standard Access";
+                dash.classList.add('glow-standard');
+                document.getElementById('mod-cyber').classList.add('locked-item');
+                document.getElementById('preset-aesthetic').classList.add('locked-item');
+                if(isLateUpgrade) alert("Upgraded to Standard!");
+            } 
+            else {
+                globalPromo = 'normal';
+                roleText.innerText = "Normal Access";
+                document.getElementById('mod-c').classList.add('locked-item');
+                document.getElementById('mod-linux').classList.add('locked-item');
+                document.getElementById('mod-cyber').classList.add('locked-item');
+                document.getElementById('preset-attitude').classList.add('locked-item');
+                document.getElementById('preset-broken').classList.add('locked-item');
+                document.getElementById('preset-aesthetic').classList.add('locked-item');
+            }
+        }
+
+        function fireHeartsConfetti() {
+            var duration = 3 * 1000; var end = Date.now() + duration;
+            (function frame() {
+                confetti({ particleCount: 5, angle: 60, spread: 55, origin: { x: 0 }, colors: ['#ff0a54', '#ff477e', '#ff7096'] });
+                confetti({ particleCount: 5, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#ff0a54', '#ff477e', '#ff7096'] });
+                if (Date.now() < end) requestAnimationFrame(frame);
+            }());
+        }
+
+        // 2. Typewriter Effect
+        function typeWriterEffect(elementId, text, speed = 15) {
+            let el = document.getElementById(elementId);
+            el.innerHTML = "";
+            let cleanText = text.replace(/\*\*/g, ''); 
+            let i = 0;
+            
+            let timer = setInterval(() => {
+                if (i < cleanText.length) {
+                    let char = cleanText.charAt(i);
+                    let currentText = el.innerHTML.replace(/<span class="animate-pulse">🌸<\/span>$/, '');
+                    
+                    if (char === '\n') {
+                        el.innerHTML = currentText + '<br><span class="animate-pulse">🌸</span>';
+                    } else {
+                        el.innerHTML = currentText + char + '<span class="animate-pulse">🌸</span>';
+                    }
+                    
+                    let chatBox = document.getElementById('chat-messages');
+                    if(chatBox) chatBox.scrollTop = chatBox.scrollHeight;
+                    i++;
+                } else {
+                    clearInterval(timer);
+                    el.innerHTML = el.innerHTML.replace(/<span class="animate-pulse">🌸<\/span>$/, '');
+                }
+            }, speed);
+        }
+
+        // 3. Tab Switching
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active-tab'));
+            document.getElementById(`tab-${tabName}`).classList.add('active-tab');
+            ['chat', 'study', 'coding', 'info', 'imagegen', 'promo'].forEach(t => {
+                let btn = document.getElementById(`tab-btn-${t}`);
+                if(btn) btn.className = btn.className.replace('bg-cyan-500/10 text-cyan-400 border-cyan-500/20', 'text-slate-400 bg-slate-800');
+            });
+            let active = document.getElementById(`tab-btn-${tabName}`);
+            if(active && tabName !== 'promo') active.className = active.className.replace('text-slate-400 bg-slate-800', 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20');
+        }
+
+        function switchStudy(section) {
+            document.querySelectorAll('.study-section').forEach(s => s.classList.remove('active-study'));
+            document.getElementById(`study-${section}`).classList.add('active-study');
+            ['doubts', 'practice', 'pyq'].forEach(s => {
+                let btn = document.getElementById(`s-btn-${s}`);
+                btn.className = "flex-1 py-2 text-sm font-bold text-slate-400";
+            });
+            document.getElementById(`s-btn-${section}`).className = "flex-1 py-2 text-sm font-bold bg-cyan-500 text-slate-900 rounded-lg";
+        }
+
+        // 4. Chat & Voice API
+        const synth = window.speechSynthesis;
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition = SpeechRecognition ? new SpeechRecognition() : null;
+        if(recognition) {
+            recognition.lang = 'bn-IN';
+            recognition.continuous = false;
+            recognition.onresult = function(event) {
+                document.getElementById('chat-input').value = event.results[0][0].transcript;
+                sendChatMessage();
+            };
+        }
+
+        function speakReply(text) {
+            if(synth.speaking) synth.cancel();
+            let cleanText = text.replace(/[*#_]/g, ''); 
+            const utterThis = new SpeechSynthesisUtterance("NEXUS bolche: " + cleanText);
+            utterThis.lang = 'bn-IN';
+            utterThis.rate = 1.1;
+            
+            const wave = document.getElementById('nexus-voice-indicator');
+            if(wave) wave.style.display = 'inline-flex';
+            
+            utterThis.onend = () => { if(wave) wave.style.display = 'none'; };
+            utterThis.onerror = () => { if(wave) wave.style.display = 'none'; };
+            synth.speak(utterThis);
+        }
+
+        function setMode(mode) {
+            currentMode = mode;
+            if (mode === 'text') {
+                document.getElementById('mode-text').className = "px-3 py-1.5 rounded bg-cyan-500 text-slate-950 font-bold";
+                document.getElementById('mode-voice').className = "px-3 py-1.5 rounded text-slate-400";
+                document.getElementById('send-icon').className = "fa-solid fa-paper-plane";
+            } else {
+                document.getElementById('mode-voice').className = "px-3 py-1.5 rounded bg-cyan-500 text-slate-950 font-bold";
+                document.getElementById('mode-text').className = "px-3 py-1.5 rounded text-slate-400";
+                document.getElementById('send-icon').className = "fa-solid fa-microphone text-red-500 animate-pulse";
+            }
+        }
+
+        function sendChatMessage() {
+            if(currentMode === 'voice' && recognition && !document.getElementById('chat-input').value) {
+                recognition.start(); return;
+            }
+            const input = document.getElementById('chat-input');
+            const msgWindow = document.getElementById('chat-messages');
+            let userText = input.value.trim();
+            if(!userText) return;
+
+            msgWindow.innerHTML += `<div class="flex items-start gap-3 ml-auto justify-end"><div class="bg-cyan-500 text-slate-950 px-4 py-2 rounded-2xl rounded-tr-none text-sm w-full">${userText}</div></div>`;
+            input.value = ''; msgWindow.scrollTop = msgWindow.scrollHeight;
+
+            let botId = "msg-" + Date.now();
+            msgWindow.innerHTML += `
+                <div class="flex items-start gap-3">
+                    <div class="bg-cyan-500/10 text-cyan-400 w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs shrink-0">NX</div>
+                    <div class="bg-slate-800 px-4 py-3 rounded-2xl text-sm w-full">
+                        <span id="${botId}-text">Process korche...</span>
+                        <div id="nexus-voice-indicator" class="voice-wave" style="display:none;"><span></span><span></span><span></span></div>
+                    </div>
+                </div>`;
+            msgWindow.scrollTop = msgWindow.scrollHeight;
+
+            fetch('/api/chat', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ message: userText, phone: userPhone }) })
+            .then(res => res.json()).then(data => {
+                typeWriterEffect(`${botId}-text`, data.reply);
+                if(currentMode === 'voice') speakReply(data.reply);
+            });
+        }
+
+        // 5. Study API
+        function askStudy(action) {
+            let formData = new FormData();
+            formData.append('action', action);
+            formData.append('phone', userPhone);
+            if(action === 'doubts') {
+                formData.append('question', document.getElementById('doubt-text').value);
+                let f = document.getElementById('doubt-img');
+                if(f.files.length > 0) formData.append('image', f.files[0]);
+            } else if(action === 'practice') {
+                formData.append('topic', document.getElementById('practice-topic').value);
+                formData.append('difficulty', document.getElementById('practice-diff').value);
+            } else {
+                formData.append('exam', document.getElementById('pyq-exam').value);
+            }
+
+            document.getElementById('study-output').innerText = "Processing...";
+            fetch('/api/study', { method: 'POST', body: formData })
+            .then(res => res.json()).then(data => { 
+                typeWriterEffect('study-output', data.reply); 
+            });
+        }
+
+        // 6. Coding API ("baki ta bolo" support)
+        document.querySelectorAll('.coding-lang-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.coding-lang-btn').forEach(b => b.classList.remove('border', 'border-cyan-500'));
+                e.target.classList.add('border', 'border-cyan-500');
+                selectedLanguage = e.target.innerText.trim();
+            });
+        });
+
+               function askCodingTeacher() {
+            let userInput = document.getElementById('code-error-input').value;
+            let formData = new FormData();
+            formData.append('code', userInput);
+            formData.append('language', selectedLanguage);
+            formData.append('phone', userPhone);
+            
+            // "Baki ta bolo", "er por" likhle catch korbe
+            let isContinue = userInput.toLowerCase().includes("baki ta") || 
+                             userInput.toLowerCase().includes("বাকিটা") || 
+                             userInput.toLowerCase().includes("er por") || 
+                             userInput.toLowerCase().includes("tarpor");
+                             
+            formData.append('mode', isContinue ? "continue" : "fresh");
+            
+            let f = document.getElementById('coding-file');
+            if(f.files.length > 0) formData.append('image', f.files[0]);
+            
+            document.getElementById('coding-teacher-output').innerText = "Teacher scan korche...";
+            fetch('/api/coding', { method: 'POST', body: formData })
+            .then(res => res.json()).then(data => { 
+                typeWriterEffect('coding-teacher-output', data.reply); 
+            });
+        }
+
+
+        // 7. Info API
+        function analyzeInfo() {
+            let f = document.getElementById('info-file');
+            if(f.files.length === 0) return alert("Chobi de!");
+            let formData = new FormData(); formData.append('image', f.files[0]);
+            document.getElementById('info-output').innerText = "Analyzing...";
+            fetch('/api/info', { method: 'POST', body: formData })
+            .then(res => res.json()).then(data => { 
+                typeWriterEffect('info-output', data.reply); 
+            });
+        }
+
+        // 8. Image Gen API (Fixes: Preview and Result Output)
+        function setPreset(type) {
+            let promptBox = document.getElementById('img-prompt');
+            if(type === 'attitude') promptBox.value = "An intense attitude profile picture with dark cinematic lighting, high contrast.";
+            if(type === 'broken') promptBox.value = "A sad, broken-hearted aesthetic style, monochromatic with blue tones.";
+            if(type === 'aesthetic') promptBox.value = "Soft aesthetic, dreamy lighting, pastel colors, high resolution.";
+        }
+
+        document.getElementById('img-upload-input').addEventListener('change', function(e) {
+            if (this.files && this.files[0]) {
+                let reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('img-output').innerHTML = `
+                        <p class="text-xs text-cyan-400 mb-2">Selected Image:</p>
+                        <img src="${e.target.result}" class="w-32 h-32 rounded-xl border border-cyan-500 object-cover mx-auto">
+                    `;
+                }
+                reader.readAsDataURL(this.files[0]);
+            }
+        });
+
+        function generateImage() {
+            let prompt = document.getElementById('img-prompt').value;
+            let fileInput = document.getElementById('img-upload-input');
+            
+            if(!prompt && fileInput.files.length === 0) return alert("Prompt likho ba chobi dao!");
+            
+            document.getElementById('img-output').innerHTML = "Generating... <i class='fa-solid fa-spinner animate-spin'></i>";
+            
+            let formData = new FormData(); 
+            formData.append('prompt', prompt);
+            if(fileInput.files.length > 0) {
+                formData.append('image', fileInput.files[0]);
+            }
+            
+            fetch('/api/imagegen', { method: 'POST', body: formData })
+            .then(res => res.json()).then(data => { 
+                if(data.image_url) {
+                    document.getElementById('img-output').innerHTML = `
+                        <p class="text-green-400 mb-2 font-bold">Generated Result:</p>
+                        <img src="${data.image_url}" class="rounded-xl border border-cyan-500 max-w-full mx-auto">
+                    `;
+                } else {
+                    document.getElementById('img-output').innerText = data.reply;
+                }
+            });
+        }
+    </script>
+</body>
+</html>
+
