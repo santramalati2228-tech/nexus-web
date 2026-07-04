@@ -31,21 +31,27 @@ GLOBAL_SYSTEM_INSTRUCTION = "Tomar nam NEXUS. Tomake baniyeche Pritam Santra. Ke
 def get_ai_text_reply(prompt, system_instruction="", image=None):
     sys_inst = system_instruction if system_instruction else GLOBAL_SYSTEM_INSTRUCTION
     
-    # LAYER 1 & 2: MULTI-KEY GEMINI ROTATION
-    for index, key in enumerate(GEMINI_KEYS):
-        if not key: continue 
-        genai.configure(api_key=key)
-        content_to_send = [prompt, image] if image else prompt
+        # LAYER 1 & 2: RANDOMIZED MULTI-KEY GEMINI ROTATION
+    import random
+    shuffled_keys = list(GEMINI_KEYS)
+    random.shuffle(shuffled_keys)
+    
+    for key in shuffled_keys:
+        if not key: continue
         try:
-            model = genai.GenerativeModel(model_name='gemini-2.5-flash', system_instruction=sys_inst)
+            genai.configure(api_key=key)
+            content_to_send = [prompt, image] if image else prompt
+            
+            # System Instruction pass kora holo jate NEXUS tar porichoy permanent mone rakhe
+            model = genai.GenerativeModel(model_name='gemini-1.5-flash', system_instruction=sys_inst)
             return model.generate_content(content_to_send).text
         except Exception as e_25:
             try:
-                model = genai.GenerativeModel(model_name='gemini-2.0-flash', system_instruction=sys_inst)
+                model = genai.GenerativeModel(model_name='gemini-1.5-pro', system_instruction=sys_inst)
                 return model.generate_content(content_to_send).text
             except Exception as e_20:
-                continue 
-            
+                continue
+        
     if image:
         return "Dukhhito bos, amar chobi dekhar server (Gemini) ekhon limit cross koreche. Groq chobi dekhte pare na."
         
