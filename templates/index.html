@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="bn">
 <head>
@@ -410,8 +409,7 @@
                     </div>
                 </div>`;
             msgWindow.scrollTop = msgWindow.scrollHeight;
-
-            fetch('/api/chat', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ message: userText, phone: userPhone }) })
+            fetch('/api/chat', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({message: userText, phone: userPhone}) })
             .then(res => res.json()).then(data => {
                 typeWriterEffect(`${botId}-text`, data.reply);
                 if(currentMode === 'voice') speakReply(data.reply);
