@@ -103,7 +103,8 @@
                     <textarea id="doubt-text" placeholder="Proshno ba math likh... (Limit par hole likhbi 'baki ta bolo')" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-4 text-sm h-24 outline-none"></textarea>
                     <div class="bg-slate-900 border-2 border-dashed border-slate-700 rounded-xl p-4 text-center relative">
                         <input type="file" id="doubt-img" class="absolute inset-0 opacity-0 cursor-pointer">
-                        <p class="text-xs text-slate-400"><i class="fa-solid fa-camera"></i> Chobi upload kor</p>
+                        <p class="text-xs text-slate-400"><i class="fa-solid fa-camera"></i> Chobi upload kor</p><img id="imagePreview" src="#" alt="Tor Chobi" style="display: none; max-width: 100%; max-height: 200px; margin: 10px auto; border-radius: 8px; object-fit: contain;">
+
                     </div>
                     <button onclick="askStudy('doubts')" class="w-full bg-cyan-500 text-slate-950 py-3 rounded-xl font-bold">Solve (Step-by-Step)</button>
                 </div>
@@ -521,6 +522,22 @@
                 }
             });
         }
+        // Chobi Preview er code
+document.getElementById('study-img').addEventListener('change', function() {
+    const file = this.files[0];
+    const preview = document.getElementById('imagePreview');
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.src = e.target.result;
+            preview.style.display = 'block';
+        }
+        reader.readAsDataURL(file);
+    } else {
+        preview.style.display = 'none';
+    }
+});
+
     </script>
 </body>
 </html>
