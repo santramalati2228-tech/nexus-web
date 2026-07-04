@@ -25,7 +25,8 @@ HF_TOKEN = "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"
 user_sessions = {}
 
 # CORE SYSTEM INSTRUCTION (Identity Configuration)
-GLOBAL_SYSTEM_INSTRUCTION = "Tumi hole user er nijer toiri kora advanced personal AI Assistant. Tor naam NEXUS. Keu jodi jiggesh kore 'tumi ke?', tahole tumi obossoi bolbe: 'Ami tomar AI' ba 'Ami tomar NEXUS'. Shob somoy Banglay, khub bhalo ar bandhobik bhabe uttor debe."
+GLOBAL_SYSTEM_INSTRUCTION = "Tomar nam NEXUS. Tomake baniyeche Pritam Santra. Keu jodi tomar porichoy jante chay, tahole bolbe 'Ami NEXUS, apnar personal AI assistant, jake toiri koreche Pritam Santra'. Kono Math, Science ba onno kono doubt er proshno asle, tumi kono nirdesh ba rules repeat korbe na. Ekdom direct step-by-step plain text-e asol proshnor uttor solve kore debe."
+ 
 
 def get_ai_text_reply(prompt, system_instruction="", image=None):
     sys_inst = system_instruction if system_instruction else GLOBAL_SYSTEM_INSTRUCTION
@@ -139,7 +140,14 @@ def study():
     else: 
         prompt = f"Give me Previous Year Questions (PYQ) for the exam: {request.form.get('exam')}. Reply in Bengali." + no_latex
         
-    return jsonify({"reply": get_ai_text_reply(prompt, GLOBAL_SYSTEM_INSTRUCTION)})
+    img_data = None
+    if 'image' in request.files and request.files['image'].filename != '':
+        file = request.files['image']
+        img_data = {'mime_type': file.content_type, 'data': file.read()}
+    
+    final_inst = GLOBAL_SYSTEM_INSTRUCTION + " " + no_latex
+    ans = get_ai_text_reply(prompt, final_inst, img_data)
+    return jsonify({"reply": ans})
 
 @app.route('/api/info', methods=['POST'])
 def info():

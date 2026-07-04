@@ -214,6 +214,16 @@
         let selectedLanguage = 'Python';
         let userPhone = 'guest';
         let globalPromo = 'normal';
+        window.onload = function() {
+    let savedName = localStorage.getItem('nexus_name');
+    let savedPhone = localStorage.getItem('nexus_phone');
+    if(savedName && savedPhone) {
+        document.getElementById('login-name').value = savedName;
+        document.getElementById('login-phone').value = savedPhone;
+        verifyIdentity(); 
+    }
+};
+
 
         // 1. Login Logic
         function verifyIdentity(isLateUpgrade = false) {
@@ -230,6 +240,9 @@
                 promo = document.getElementById('login-promo').value.trim();
                 if (!name || !phone) { alert("Name ar Phone de!"); return; }
                 userPhone = phone;
+                localStorage.setItem('nexus_name', name);
+                localStorage.setItem('nexus_phone', phone);
+
                 document.getElementById('login-gateway').classList.add('hidden');
                 document.getElementById('main-dashboard').classList.remove('hidden');
                 document.getElementById('main-dashboard').classList.add('flex');
